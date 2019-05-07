@@ -67,7 +67,7 @@ C  Northern boundary
          IF (kSurfS(i,j,bi,bj).LE.Nr) THEN
           IF ( useOBeta ) THEN
            rStarFldS(i,j,bi,bj) = 1. _d 0
-     &      + OBNeta(  j,bi,bj) / (rSurfS(i,j,bi,bj)-rLowS(i,j,bi,bj))
+     &      + OBNeta(  i,bi,bj) / (rSurfS(i,j,bi,bj)-rLowS(i,j,bi,bj))
           ELSE
            rStarFldS(i,j,bi,bj) = 1. _d 0
      &      + etaFld(i,j,bi,bj) / (rSurfS(i,j,bi,bj)-rLowS(i,j,bi,bj))
@@ -84,7 +84,7 @@ C  Southern boundary
          IF (kSurfS(i,j,bi,bj).LE.Nr) THEN
           IF ( useOBeta ) THEN
            rStarFldS(i,j,bi,bj) = 1. _d 0
-     &      + OBSeta(  j,bi,bj) / (rSurfS(i,j,bi,bj)-rLowS(i,j,bi,bj))
+     &      + OBSeta(  i,bi,bj) / (rSurfS(i,j,bi,bj)-rLowS(i,j,bi,bj))
           ELSE
            rStarFldS(i,j,bi,bj) = 1. _d 0
      &      + etaFld(i,j-1,bi,bj)/(rSurfS(i,j,bi,bj)-rLowS(i,j,bi,bj))
