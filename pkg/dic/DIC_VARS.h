@@ -230,7 +230,7 @@ C  parfrac                :: fraction of Qsw that is PAR
 C  k0                     :: light attentuation coefficient of water [1/m]
 C  kchl                   :: light attentuation coefficient of chlorophyll [m2/mg]
 C  mu_PHY                 :: phytoplankton mortality rate [1/d]
-C  mu_PHY                 :: zooplankton mortality rate [1/d]
+C  mu_ZOO                 :: zooplankton mortality rate [1/d]
 C  r_PHY                  :: phytoplankton exudation  [1/d]
 C  r_ZOO                  :: zooplankton excretion [1/d]
 C  kappa_DET              :: remineralization time scale of Detritus [1/d]
@@ -284,7 +284,7 @@ C  QSW_underice           :: is Qsw is masked by ice fraction?
       _RL omegaC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
       _RL CHL(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL mu_PHY
-      _RL  mu_PHY                
+      _RL  mu_ZOO                
       _RL  r_PHY                  
       _RL  r_ZOO
       _RL  kappa_DET             
