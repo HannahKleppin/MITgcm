@@ -229,6 +229,14 @@ C                                    Fe_flux = fesedflux_pcm*pflux + FeIntSec
 C  parfrac                :: fraction of Qsw that is PAR
 C  k0                     :: light attentuation coefficient of water [1/m]
 C  kchl                   :: light attentuation coefficient of chlorophyll [m2/mg]
+C  mu_PHY                 :: phytoplankton mortality rate [1/d]
+C  mu_PHY                 :: zooplankton mortality rate [1/d]
+C  r_PHY                  :: phytoplankton exudation  [1/d]
+C  r_ZOO                  :: zooplankton excretion [1/d]
+C  kappa_DET              :: remineralization time scale of Detritus [1/d]
+C  kappa_DOP              :: remineralization time scale of DOP [1/d]
+C  sigma_assim            :: assimilation efficiency of Zooplankton []
+C  phi_loss_HT_levels     :: zooplankton loss to higher trophic levels [mg P/m^3/d]                  
 C  alphamax, alphamin     :: not used (legacy adjoint param)
 C  calpha                 :: not used (legacy adjoint param)
 C  crain_ratio            :: not used (legacy adjoint param)
@@ -250,7 +258,9 @@ C  QSW_underice           :: is Qsw is masked by ice fraction?
      &     alphaUniform, rainRatioUniform,
      &     alphamax, alphamin,
      &     calpha, crain_ratio, cInputFe, calpfe, feload, cfeload,
-     &     nlev, QSW_underice
+     &     nlev, QSW_underice,
+     &     mu_PHY,mu_ZOO, r_PHY,kappa_DET, kappa_DOP, sigma_assim,
+     &      phi_loss_HT_levels,r_ZOO
 
       INTEGER nlev
 
@@ -273,6 +283,14 @@ C  QSW_underice           :: is Qsw is masked by ice fraction?
       _RL InputFe(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL omegaC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
       _RL CHL(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
+      _RL mu_PHY
+      _RL  mu_PHY                
+      _RL  r_PHY                  
+      _RL  r_ZOO
+      _RL  kappa_DET             
+      _RL  kappa_DOP           
+      _RL  sigma_assim           
+      _RL  phi_loss_HT_levels        
       _RL Kpo4
       _RL DOPfraction
       _RL zcrit
