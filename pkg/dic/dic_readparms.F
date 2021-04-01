@@ -103,7 +103,9 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
 
        permil      = 1. _d 0 / 1024.5 _d 0
        Pa2Atm      = 1.01325 _d 5
-#ifdef DIC_BIOTIC
+! for conversion between gramms and mol:
+       MM_phos     = 30.973762 _d 0
+#ifdef DIC_BIOTIC 
        DOPfraction = 0.67 _d 0
        KDOPRemin   = 1. _d 0/(6. _d 0*30. _d 0*86400. _d 0)
        KRemin      = 0.9 _d 0
@@ -129,6 +131,16 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
        ligand_tot  = 1. _d -6
        alphaUniform     = 2. _d -3/(360. _d 0 * 86400. _d 0)
        rainRatioUniform = 7. _d -2
+       mu_PHY      = 0.008/86400 _d 0
+       mu_ZOO  = 0.006/86400 _d 0            
+       r_PHY   =   0.03/86400 _d 0       
+       r_ZOO   = 0.06/86400 _d 0
+       kappa_DET   = 0.025/86400 _d 0          
+       kappa_DOP   =    0.004/86400 _d 0    
+       sigma_assim =     0.6     
+       phi_loss_HT_levels =  0.04/86400/R_NP /MM_phos  
+! the default values are for now taken from Tatiana Ilyina et al 2013
+! Zooplankton mortality not, there seems to be a typo in the paper
 #endif
        DIC_windFile  = ' '
        DIC_atmospFile= ' '
