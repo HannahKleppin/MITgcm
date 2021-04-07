@@ -300,18 +300,23 @@ C add all tendencies for PO4, DOP, ALK, DIC
 #else
            RDOP(i,j,k)= maskC(i,j,k,bi,bj)*KDOPRemin*PTR_DOP(i,j,k)
 #endif
-           RMIN_PHY(i,j,k)= maskC(i,j,k,bi,bj)*K_remin_PHY*PTR_PHY(i,j,k)
+           EX_PHY(i,j,k)= maskC(i,j,k,bi,bj)*r_PHY*PTR_PHY(i,j,k)
+           !Phytoplankton exudation to DOP
            RMIN_DET(i,j,k)= maskC(i,j,k,bi,bj)*K_remin_DET*PTR_DET(i,j,k)
            MORT_PHY(i,j,k)= maskC(i,j,k,bi,bj)*mu_PHY*PTR_PHY(i,j,k)
            MORT_ZOO(i,j,k)= maskC(i,j,k,bi,bj)*mu_ZOO*PTR_ZOO(i,j,k)
            GRAZ_ZOO(i,j,k)= maskC(i,j,k,bi,bj)*graz_ZOO*PTR_ZOO(i,j,k)
+           GRAZ_ZOO_HAMOCC(i,j,k)=maskC(i,j,k,bi,bj)*graz_ZOO_max*PTR_ZOO(i,j,k)*
+     &                            (PTR_PHY(i,j,k)-PHY_MIN)/(K_Zoo+PTR_PHY(i,j,k))
            ASSIM_ZOO(i,j,k)= maskC(i,j,k,bi,bj)*graz_ZOO*PTR_ZOO(i,j,k)*sigma_z
+           ASSIM_ZOO_HAMOCC(i,j,k)= maskC(i,j,k,bi,bj)*GRAZ_ZOO_HAMOCC(i,j,k)*
+     &                             PTR_ZOO(i,j,k)*sigma_z*ingest_z
            LTHL_ZOO(i,j,k)=maskC(i,j,k,bi,bj)*loss_HT_levels*PTR_ZOO(i,j,k)^2
            GPO4(i,j,k)=-BIOac(i,j,k)*PTR_PHY(i,j,k) + RDOP(i,j,k)
 
            car(i,j,k) = cflux(i,j,k) - CAR_S(i,j,k)
 
-           GDOP(i,j,k)=RMIN_DET(i,j,k)+RMIN_PHY(i,j,k)
+           GDOP(i,j,k)=RMIN_DET(i,j,k)+EX_PHY(i,j,k)
      &                  -RDOP(i,j,k)
 !-BIOac_regen(i,j,k)*PTR_PHY(i,j,k)
 
@@ -319,10 +324,22 @@ C add all tendencies for PO4, DOP, ALK, DIC
 
            GDIC(i,j,k)=car(i,j,k)+R_CP*GPO4(i,j,k)
  
-           GPHY(i,j,k) = (BIOac(i,j,k)+ BIOac_regen(i,j,k))*PTR_PHY(i,j,k)
-     &                   -MORT_PHY(i,j,k)-RMIN_PHY(i,j,k)-GRAZ_ZOO(i,j,k)
+           GPHY(i,j,k) = (BIOac(i,j,k))*PTR_PHY(i,j,k)
+     &                   -MORT_PHY(i,j,k)-EX_PHY(i,j,k)-GRAZ_ZOO(i,j,k)
+           GPHY_HAMOCC(i,j,k) = (BIOac(i,j,k))*PTR_PHY(i,j,k)
+     &                   -(MORT_PHY(i,j,k)-mu_PHY*PHY_MIN*maskC(i,j,k,bi,bj))
+     &                   -(EX_PHY(i,j,k)-r_PHY*PHY_MIN*maskC(i,j,k,bi,bj)-GRAZ_ZOO_HAMOCC(i,j,k)
            GDET(i,j,k) = MORT_PHY(i,j,k)+ MORT_ZOO(i,j,k)-RMIN_DET(i,j,k)
      &                   +GRAZ_ZOO(i,j,k)-ASSIM_ZOO(i,j,k)+LTHL_ZOO(i,j,k)
+     &                   - EXP_flux(i,j,k)
+           GDET_HAMOCC(i,j,k)=MORT_PHY(i,j,k)+MORT_ZOO(i,j,k)+GRAZ_ZOO_HAMOCC(i,j,k)
+     &                        -ASSIM_ZOO_HAMOCC(i,j,k)/sigma_z+LTHL_ZOO(i,j,k)-
+     &                         RMIN_DET(i,j,k)-EXP_flux(i,j,k)
+!#           GDET_HAMOCC(i,j,k)=MORT_PHY(i,j,k)+MORT_ZOO(i,j,k)+GRAZ_ZOO_HAMOCC(i,j,k)
+!     &                        -ASSIM_ZOO_HAMOCC(i,j,k)/sigma_z+LTHL_ZOO(i,j,k)*(1-0.95 _d 0)
+!     &                         -RMIN_DET(i,j,k)-EXP_flux(i,j,k)
+           GZOO_HAMOCC(i,j,k) = ASSIM_ZOO_HAMOCC(i,j,k)-MORT_ZOO(i,j,k)
+     &                   -LTHL_ZOO(i,j,k)
            GZOO(i,j,k) = ASSIM_ZOO(i,j,k)-MORT_ZOO(i,j,k)
      &                   -LTHL_ZOO(i,j,k)
 #ifdef ALLOW_O2
