@@ -139,6 +139,9 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
        kappa_DOP   =    0.004/86400 _d 0    
        sigma_assim =     0.6     
        phi_loss_HT_levels =  0.04/86400/R_NP /MM_phos  
+       K_Zoo       = 4. _d -5  !molP m^-3
+       graz_ZOO_max= 1./86400. _d 0 !s^-1
+       PHY_MIN     = 1. _d -8       !mol P m^-3
 ! the default values are for now taken from Tatiana Ilyina et al 2013
 ! Zooplankton mortality not, there seems to be a typo in the paper
 #endif
