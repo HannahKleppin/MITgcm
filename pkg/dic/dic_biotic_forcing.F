@@ -6,6 +6,7 @@ C !ROUTINE: DIC_BIOTIC_FORCING
 C !INTERFACE: ==========================================================
       SUBROUTINE DIC_BIOTIC_FORCING(
      U                      PTR_DIC, PTR_ALK, PTR_PO4, PTR_DOP,
+     U                      PTR_DET, PTR_PHY, PTR_ZOO
 #ifdef ALLOW_O2
      U                      PTR_O2,
 #endif
@@ -80,13 +81,13 @@ C                            grazing of zooplankton, mortality and remineralizat
 C  GDET                   :: tendency of Detritus pool due to biological activity
 C  GZOO                   :: tendency of zooplankton due to mortality, zooplankton
 C                            grazing and loss rate to higher trophic levels 
-C                            (is directly put back in to Detritus)
+C                            (is directly put back in to Detritus  pool)
 C  GDOP                   :: tendency of DOP pool due to, detritus and phytoplankton degradation, 
 C                            remineralization and regenerated biological productivity
+C The 5 terms above also exist as _HAMOCC, with the corresponding formulations following Ilyina2013 (HAMOCC)
 C  CAR                    :: carbonate changes due to biological
 C                             productivity and remineralization
 C  BIOac                  :: biological productivity
-C  BIOac_regen            :: regenerated biological activity
 C  RDOP                   :: DOP sink due to remineralization
 C  pflux                  :: changes to PO4 due to flux and remineralization
 C  CAR_S                  :: carbonate sink
@@ -99,13 +100,26 @@ C  freefe                 :: iron not bound to ligand
       _RL  GPHY(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  GDET(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  GZOO(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  GPO4_HAMOCC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  GDOP_HAMOCC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  GPHY_HAMOCC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  GDET_HAMOCC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  GZOO_HAMOCC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  SURA(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  SURC(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  SURO(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  CAR(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  BIOac(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
-      _RL  BIOac_regen(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  RDOP(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  EX_PHY(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  EX_ZOO(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  MORT_PHY(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  MORT_ZOO(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  LTHL_ZOO(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  GRAZ_ZOO(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  GRAZ_ZOO_HAMOCC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  ASSIM_ZOO(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  ASSIM_ZOO_HAMOCC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  pflux(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  exportflux(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  CAR_S(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
@@ -146,6 +160,11 @@ CEOP
            RDOP(i,j,k) =0. _d 0
            GDIC(i,j,k) =0. _d 0
            GALK(i,j,k) =0. _d 0
+           GPO4_HAMOCC(i,j,k) =0. _d 0
+           GDOP_HAMOCC(i,j,k) =0. _d 0
+           GPHY_HAMOCC(i,j,k) =0. _d 0
+           GDET_HAMOCC(i,j,k) =0. _d 0
+           GZOO_HAMOCC(i,j,k) =0. _d 0
            GPO4(i,j,k) =0. _d 0
            GDOP(i,j,k) =0. _d 0
            GPHY(i,j,k) =0. _d 0
@@ -153,7 +172,6 @@ CEOP
            GZOO(i,j,k) =0. _d 0
            CAR(i,j,k)  =0. _d 0
            BIOac(i,j,k)   =0. _d 0
-           BIOac_regen(i,j,k)   =0. _d 0
            pflux(i,j,k)   =0. _d 0
            exportflux(i,j,k)=0. _d 0
            cflux(i,j,k)   =0. _d 0
@@ -229,22 +247,24 @@ C biological activity
 #ifdef ALLOW_FE
      I               PTR_FE,
 #endif
-     O               BIOac,BIOac_regen
+     O               BIOac,
      I               bi, bj, iMin, iMax, jMin, jMax,
      I               myIter, myTime, myThid )
 
 C flux of po4 from layers with biological activity
-#ifdef ALLOW_DEBUG
-       IF (debugMode) CALL DEBUG_CALL('PHOS_FLUX',myThid)
-#endif
-       CALL PHOS_FLUX(
-     I               BIOac,
-     U               pflux, exportflux,
-     I               bi, bj, iMin, iMax, jMin, jMax,
-     I               myIter, myTime, myThid )
+!C in our implementation particles are advected vertically, i.e.
+!particles are sinking with explicit sinking velocity
+!#ifdef ALLOW_DEBUG
+!       IF (debugMode) CALL DEBUG_CALL('PHOS_FLUX',myThid)
+!#endif
+!       CALL PHOS_FLUX(
+!     I               BIOac,
+!     U               pflux, exportflux,
+!     I               bi, bj, iMin, iMax, jMin, jMax,
+!     I               myIter, myTime, myThid )
 
 C- Carbonate sink
-c- possibly sth needs still to be changed here?? Or only at carbonate flux?
+c- possibly sth needs still to be changed here?? Or only at carbonate flux? remove dop fraction
        DO k=1,Nr
          DO j=jMin,jMax
           DO i=iMin,iMax
@@ -300,48 +320,80 @@ C add all tendencies for PO4, DOP, ALK, DIC
 #else
            RDOP(i,j,k)= maskC(i,j,k,bi,bj)*KDOPRemin*PTR_DOP(i,j,k)
 #endif
+!C Source and sink terms for all biogeochemical tracers
+           !Phytoplankton exudation to DOP 
            EX_PHY(i,j,k)= maskC(i,j,k,bi,bj)*r_PHY*PTR_PHY(i,j,k)
-           !Phytoplankton exudation to DOP
+           !Zooplankton excretion to DOP (possibly a share could go to PO4)
+           EX_ZOO(i,j,k)= maskC(i,j,k,bi,bj)*r_ZOO*PTR_ZOO(i,j,k)
+           !remineralization of detritus to DOP
            RMIN_DET(i,j,k)= maskC(i,j,k,bi,bj)*K_remin_DET*PTR_DET(i,j,k)
+           !phytoplankton mortality to Det
            MORT_PHY(i,j,k)= maskC(i,j,k,bi,bj)*mu_PHY*PTR_PHY(i,j,k)
+           !Zooplankton mortality to Det
            MORT_ZOO(i,j,k)= maskC(i,j,k,bi,bj)*mu_ZOO*PTR_ZOO(i,j,k)
-           GRAZ_ZOO(i,j,k)= maskC(i,j,k,bi,bj)*graz_ZOO*PTR_ZOO(i,j,k)
+           !includes natural mortality and feeding of higher trophic levels
+           MORT_ZOO_HAMOCC(i,j,k)= maskC(i,j,k,bi,bj)*mu_HAM_ZOO*
+     &                            (PTR_ZOO(i,j,k)-ZOO_min)^2
+           !Grazing of Zooplankton on PhytoP
+           !Two different formulations for comparison, HAMOCC formulation has in all terms a minimum PHYtoplankton&ZOOplankton concentration that remains unaffected by grazing,
+           !mortality, etc.
+           GRAZ_ZOO(i,j,k)= maskC(i,j,k,bi,bj)*graz_ZOO_max*PTR_PHY(i,j,k)/
+     &                      (PTR_PHY(i,j,k)+K_Zoo)*PTR_ZOO(i,j,k) 
            GRAZ_ZOO_HAMOCC(i,j,k)=maskC(i,j,k,bi,bj)*graz_ZOO_max*PTR_ZOO(i,j,k)*
      &                            (PTR_PHY(i,j,k)-PHY_MIN)/(K_Zoo+PTR_PHY(i,j,k))
-           ASSIM_ZOO(i,j,k)= maskC(i,j,k,bi,bj)*graz_ZOO*PTR_ZOO(i,j,k)*sigma_z
-           ASSIM_ZOO_HAMOCC(i,j,k)= maskC(i,j,k,bi,bj)*GRAZ_ZOO_HAMOCC(i,j,k)*
-     &                             PTR_ZOO(i,j,k)*sigma_z*ingest_z
+           !Assimilation efficiency
+           ASSIM_ZOO(i,j,k)= maskC(i,j,k,bi,bj)*GRAZ_ZOO*sigma_z
+           ASSIM_ZOO_HAMOCC(i,j,k)= maskC(i,j,k,bi,bj)*GRAZ_ZOO_HAMOCC(i,j,k)
+     &                             *sigma_assim*omega_assim
+           !Loss of Zooplankton mass to higher trophic levels, returned to Det
            LTHL_ZOO(i,j,k)=maskC(i,j,k,bi,bj)*loss_HT_levels*PTR_ZOO(i,j,k)^2
-           GPO4(i,j,k)=-BIOac(i,j,k)*PTR_PHY(i,j,k) + RDOP(i,j,k)
+!-----------------------------------------------------------------------------           
+!C Tendency terms due to source and sinks of all biogeochemical tracers 
+!Phosphate
+           GPO4(i,j,k)=-BIOac(i,j,k)*PTR_PHY(i,j,k) + RDOP(i,j,k)+
+     &                  RMIN_DET(i,j,k)
+           GPO4_HAMOCC(i,j,k)=-BIOac(i,j,k)*PTR_PHY(i,j,k) + RDOP(i,j,k)+
+     &                  RMIN_DET(i,j,k)+(GRAZ_ZOO_HAMOCC(i,j,k)*sigma_assim
+     &                  -ASSIM_ZOO_HAMOCC(i,j,k))+MORT_ZOO_HAMOCC(i,j,k)*epsilon_z
 
-           car(i,j,k) = cflux(i,j,k) - CAR_S(i,j,k)
-
-           GDOP(i,j,k)=RMIN_DET(i,j,k)+EX_PHY(i,j,k)
-     &                  -RDOP(i,j,k)
-!-BIOac_regen(i,j,k)*PTR_PHY(i,j,k)
-
-           GALK(i,j,k)=+2. _d 0 *car(i,j,k)-R_NP*GPO4(i,j,k)
-
-           GDIC(i,j,k)=car(i,j,k)+R_CP*GPO4(i,j,k)
- 
-           GPHY(i,j,k) = (BIOac(i,j,k))*PTR_PHY(i,j,k)
+!Dissolved organic P
+           GDOP(i,j,k)=EX_PHY(i,j,k) + EX_ZOO(i,j,k)-RDOP(i,j,k)
+     &                  +(GRAZ_ZOO(i,j,k)-ASSIM_ZOO(i,j,k))*omega_z
+           GDOP_HAMOCC(i,j,k)= (EX_PHY(i,j,k)-r_PHY*PHY_MIN*maskC(i,j,k,bi,bj))
+     &                        + (EX_ZOO(i,j,k)-r_ZOO*ZOO_min*maskC(i,j,k,bi,bj))
+     &                        -RDOP(i,j,k)
+!PHYTOPLANKTON
+           GPHY(i,j,k) = (BIOac(i,j,k))*PTR_PHY(i,j,k)-EXP_flux_PHY(i,j,k)
      &                   -MORT_PHY(i,j,k)-EX_PHY(i,j,k)-GRAZ_ZOO(i,j,k)
-           GPHY_HAMOCC(i,j,k) = (BIOac(i,j,k))*PTR_PHY(i,j,k)
+           !HAMOCC PHYTO
+           GPHY_HAMOCC(i,j,k) = (BIOac(i,j,k))*PTR_PHY(i,j,k)-EXP_flux_PHY(i,j,k)
      &                   -(MORT_PHY(i,j,k)-mu_PHY*PHY_MIN*maskC(i,j,k,bi,bj))
-     &                   -(EX_PHY(i,j,k)-r_PHY*PHY_MIN*maskC(i,j,k,bi,bj)-GRAZ_ZOO_HAMOCC(i,j,k)
+     &                   -(EX_PHY(i,j,k)-r_PHY*PHY_MIN*maskC(i,j,k,bi,bj))-GRAZ_ZOO_HAMOCC(i,j,k)
+!DETRITUS
            GDET(i,j,k) = MORT_PHY(i,j,k)+ MORT_ZOO(i,j,k)-RMIN_DET(i,j,k)
-     &                   +GRAZ_ZOO(i,j,k)-ASSIM_ZOO(i,j,k)+LTHL_ZOO(i,j,k)
-     &                   - EXP_flux(i,j,k)
-           GDET_HAMOCC(i,j,k)=MORT_PHY(i,j,k)+MORT_ZOO(i,j,k)+GRAZ_ZOO_HAMOCC(i,j,k)
-     &                        -ASSIM_ZOO_HAMOCC(i,j,k)/sigma_z+LTHL_ZOO(i,j,k)-
-     &                         RMIN_DET(i,j,k)-EXP_flux(i,j,k)
+     &                   +(GRAZ_ZOO(i,j,k)-ASSIM_ZOO(i,j,k))*(1. _d 0 -omega_z)+LTHL_ZOO(i,j,k)
+     &                   - EXP_flux_DET(i,j,k)
+           !HAMOCC DETRITUS
+           GDET_HAMOCC(i,j,k)=MORT_PHY(i,j,k)+MORT_ZOO_HAMOCC(i,j,k)*(1. _d 0 -epsilon_z)
+     &                        +(GRAZ_ZOO_HAMOCC(i,j,k)-ASSIM_ZOO_HAMOCC(i,j,k)/omega_assim)
+     &                        -RMIN_DET(i,j,k)-EXP_flux(i,j,k)
+                             
 !#           GDET_HAMOCC(i,j,k)=MORT_PHY(i,j,k)+MORT_ZOO(i,j,k)+GRAZ_ZOO_HAMOCC(i,j,k)
 !     &                        -ASSIM_ZOO_HAMOCC(i,j,k)/sigma_z+LTHL_ZOO(i,j,k)*(1-0.95 _d 0)
 !     &                         -RMIN_DET(i,j,k)-EXP_flux(i,j,k)
-           GZOO_HAMOCC(i,j,k) = ASSIM_ZOO_HAMOCC(i,j,k)-MORT_ZOO(i,j,k)
-     &                   -LTHL_ZOO(i,j,k)
+!Zooplankton
+           GZOO_HAMOCC(i,j,k) = ASSIM_ZOO_HAMOCC(i,j,k)-MORT_ZOO_HAMOCC(i,j,k)
+     &                          -(EX_ZOO(i,j,k)-r_ZOO*ZOO_min*maskC(i,j,k,bi,bj))
            GZOO(i,j,k) = ASSIM_ZOO(i,j,k)-MORT_ZOO(i,j,k)
-     &                   -LTHL_ZOO(i,j,k)
+     &                   -LTHL_ZOO(i,j,k)- EX_ZOO(i,j,k)
+     
+     
+           car(i,j,k) = cflux(i,j,k) - CAR_S(i,j,k)
+!Alkalinity
+           GALK(i,j,k)=+2. _d 0 *car(i,j,k)-R_NP*GPO4(i,j,k)
+!conversion to carbon
+           GDIC(i,j,k)=car(i,j,k)+R_CP*GPO4(i,j,k)
+
 #ifdef ALLOW_O2
            if (PTR_O2(i,j,k).GT.O2crit) then
              GO2(i,j,k)= R_OP*GPO4(i,j,k)
@@ -418,7 +470,7 @@ C update
            PTR_DET(i,j,k)=
      &      PTR_DET(i,j,k)+GDET(i,j,k)*PTRACERS_dTLev(k)
            PTR_ZOO(i,j,k)=
-     &      PTR_ZOO(i,j,k)+GDET(i,j,k)*PTRACERS_dTLev(k)
+     &      PTR_ZOO(i,j,k)+GZOO(i,j,k)*PTRACERS_dTLev(k)
 #ifdef ALLOW_O2
            PTR_O2(i,j,k)=
      &      PTR_O2(i,j,k)+GO2(i,j,k)*PTRACERS_dTLev(k)
@@ -468,6 +520,44 @@ C- average to have flux at interface of layer
          ENDIF
         ENDDO
        ENDDO
+       
+       !From DARWIN code
+     
+389 	c -----------------------------------------------------------------
+390 	c evaluate vertical sink terms
+391 	c ************************************************************
+392 	c     biosink is +ve downwards
+393 	c     (upstream - downstream) * vertical velocity
+394 	c     bvert is a gain term
+395 	
+396 	!     factors to avoid sinking into surface layer, or out of bottom
+397 	      fSurf=float(1-surface)
+398 	      fBott=float(1-bottom)
+399 	!
+400 	      do io=1,iomax
+401 	!       plankton sinking
+402 	        do jp=1,npmax
+403 	            bvert(io,jp) = (fSurf*bioabove(io,jp)-fBott*biomass(io,jp))
+404 	     &                   *  biosink(jp) / dzlocal           ! + sinking in - sinking out
+405 	        enddo
+406 	!       organic matter sinking
+407 	        if (io.ne.iChlo) then
+408 	          pomsink(io) = (fSurf*orgabove(io,2)-fBott*orgmat(io,2))
+409 	     &                *  orgsink(2) / dzlocal
+410 	        endif
+411 	      enddo
+412 	c ************************************************************
+413 	c end evaluate vertical sink terms
+414 	c -----------------------------------------------------------------  
+       
+       
+       
+       
+       
+       
+       
+       
+       
 C--   If availabe, flux carbon export downward;
 C--   calculate flux to each layer from base of k
        zbase=-rF(k+1)
@@ -562,8 +652,6 @@ C save averages
           DO i=iMin,iMax
             BIOave(i,j,k,bi,bj)   =BIOave(i,j,k,bi,bj)+
      &                             BIOac(i,j,k)*deltaTClock
-            BIOave_reg(i,j,k,bi,bj)=BIOave_reg(i,j,k,bi,bj)+
-     &                             BIOac_reg(i,j,k)*deltaTClock
             PHYave(i,j,k,bi,bj)   =PHYave(i,j,k,bi,bj)+
      &                             PTR_PHY(i,j,k)*deltaTClock
             CARave(i,j,k,bi,bj)   =CARave(i,j,k,bi,bj)+
