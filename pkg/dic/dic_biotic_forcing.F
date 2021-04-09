@@ -105,6 +105,10 @@ C  freefe                 :: iron not bound to ligand
       _RL  GPHY_HAMOCC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  GDET_HAMOCC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  GZOO_HAMOCC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  SED_DET(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  SED_PHY(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  sink_PHY(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
+      _RL  sink_DET(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       _RL  SURA(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  SURC(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
       _RL  SURO(1-OLx:sNx+OLx,1-OLy:sNy+OLy)
@@ -174,6 +178,8 @@ CEOP
            BIOac(i,j,k)   =0. _d 0
            pflux(i,j,k)   =0. _d 0
            exportflux(i,j,k)=0. _d 0
+           EXP_flux_PHY(i,j,k) = 0. _d 0
+           EXP_fux_DET(i,j,k)= 0. _d 0
            cflux(i,j,k)   =0. _d 0
            CAR_S(i,j,k)   =0. _d 0
 #ifdef ALLOW_O2
@@ -310,6 +316,69 @@ C old OCMIP way
      I                    myIter, myTime, myThid )
 #endif
 
+
+
+
+!!!!!!!!!!!!!!!!!!!!! Active sinking of Phytoplankton and Detritus !!!!!!!!
+
+C- Calculate sedimentation rate at base of each layer
+
+
+       DO j=jmin,jmax
+        DO i=imin,imax
+         SED_DET(i,j,1)=0. _d 0
+         SED_PHY(i,j,1)=0. _d 0
+         SED_DET(i,j,nlev)=0. _d 0
+         SED_PHY(i,j,nlev)=0. _d 0
+         DO k=2,Nr-1
+                  
+             IF (hFacC(i,j,k,bi,bj).GT.0. _d 0) THEN
+C--   If no layer below initial layer (because of bottom or
+C--   topography), no flux
+          IF (k.EQ.Nr) THEN
+          SED_DET(i,j,k)=0. _d 0
+           SED_PHY(i,j,k)=0. _d 0
+          ELSEIF ( _hFacC(i,j,k+1,bi,bj).EQ.0. _d 0 ) THEN
+           SED_DET(i,j,k)=0. _d 0
+           SED_PHY(i,j,k)=0. _d 0
+          ELSE
+C- average to have concentration and sinking velocity at interface of layer        
+           SED_PHY(i,j,k) = (PTR_PHY(i,j,k-1)*drF(k-1)*_hFacC(i,j,k-1,bi,bj)
+    &       +PTR_PHY(i,j,k)*drF(k)* _hFacC(i,j,k,bi,bj))/(drF(k)*_hFacC(i,j,k,bi,bj)
+    &         +drF(k-1)*_hFacC(i,j,k-1,bi,bj) )
+    
+           sink_PHY(i,j,k)=(w_sink(i,j,k-1)*drF(k-1)*_hFacC(i,j,k-1,bi,bj)
+    &                      +w_sink(i,j,k)*drF(k)* _hFacC(i,j,k,bi,bj) )/
+    &                  (drF(k)*_hFacC(i,j,k,bi,bj)+drF(k-1)*_hFacC(i,j,k-1,bi,bj) )
+    
+           SED_DET(i,j,k) = (PTR_DET(i,j,k-1)*drF(k-1)*_hFacC(i,j,k-1,bi,bj)
+    &                    +PTR_DET(i,j,k)*drF(k)* _hFacC(i,j,k,bi,bj))/(drF(k)*
+    &                    _hFacC(i,j,k,bi,bj)+drF(k-1)*_hFacC(i,j,k-1,bi,bj) )
+    
+           sink_DET(i,j,k)=(w_sink_d(i,j,k-1)*drF(k-1)*_hFacC(i,j,k-1,bi,bj)
+    &                      +w_sink_d(i,j,k)*drF(k)* _hFacC(i,j,k,bi,bj) )/
+    &                  (drF(k)*_hFacC(i,j,k,bi,bj)+drF(k-1)*_hFacC(i,j,k-1,bi,bj) )
+    
+    
+          ENDIF
+         ENDIF
+     
+        EXP_flux_PHY(i,j,k-1)=(SED_PHY(i,j,k-1)*sink_PHY(i,j,k-1)-SED_PHY(i,j,k)
+    &                       *sink_PHY(i,j,k))/(drF(k-1)*_hFacC(i,j,k-1,bi,bj))
+             
+        EXP_flux_DET(i,j,k-1)=(SED_DET(i,j,k-1)*sink_DET(i,j,k-1)-SED_DET(i,j,k)
+    &                       *sink_DET(i,j,k))/(drF(k-1)*_hFacC(i,j,k-1,bi,bj))
+             
+          ENDDO
+        
+        EXP_flux_PHY(i,j,Nr)=SED_PHY(i,j,Nr)*sink_PHY(i,j,Nr)
+    &                        /(drF(Nr)*_hFacC(i,j,Nr,bi,bj))     
+        EXP_flux_DET(i,j,Nr)=SED_DET(i,j,Nr)*sink_DET(i,j,Nr)
+    &                        /(drF(Nr)*_hFacC(i,j,Nr,bi,bj))
+        ENDDO
+       ENDDO
+
+
 C add all tendencies for PO4, DOP, ALK, DIC
        DO k=1,Nr
          DO j=jMin,jMax
@@ -376,7 +445,7 @@ C add all tendencies for PO4, DOP, ALK, DIC
            !HAMOCC DETRITUS
            GDET_HAMOCC(i,j,k)=MORT_PHY(i,j,k)+MORT_ZOO_HAMOCC(i,j,k)*(1. _d 0 -epsilon_z)
      &                        +(GRAZ_ZOO_HAMOCC(i,j,k)-ASSIM_ZOO_HAMOCC(i,j,k)/omega_assim)
-     &                        -RMIN_DET(i,j,k)-EXP_flux(i,j,k)
+     &                        -RMIN_DET(i,j,k)-EXP_flux_DET(i,j,k)
                              
 !#           GDET_HAMOCC(i,j,k)=MORT_PHY(i,j,k)+MORT_ZOO(i,j,k)+GRAZ_ZOO_HAMOCC(i,j,k)
 !     &                        -ASSIM_ZOO_HAMOCC(i,j,k)/sigma_z+LTHL_ZOO(i,j,k)*(1-0.95 _d 0)
@@ -483,153 +552,7 @@ C update
          ENDDO
        ENDDO
 
-!!!!!!!!!!!!!!!!!!!!! Active sinking of Phytoplankton and Detritus !!!!!!!!
-       DO k=1,Nr
-         DO j=jMin,jMax
-          DO i=iMin,iMax
-             PTR_PHY(i,j,k)=
-    &        PTR_PHY(i,j,k)+w_PHY(i,j,k)*(PTR_PHY(i,j,k)-PTR_PHY(i,j,k-1))/drC(k)
-
-
-C- Calculate sedimentation rate at base of each layer
-
-
-       DO j=jmin,jmax
-        DO i=imin,imax
-         SED_DET(i,j,1)=0. _d 0
-         SED_PHY(i,j,1)=0. _d 0
-         DO k=2,nlev
-!         SED_DET(i,j) = 0. _d 0
-!         SED_PHY(i,j)= 0. _d 0
-         IF (hFacC(i,j,k,bi,bj).GT.0. _d 0) THEN
-C--   If no layer below initial layer (because of bottom or
-C--   topography), then remineralize in here
-          IF (k.EQ.Nr) THEN
-          SED_DET(i,j,k)=0. _d 0
-           SED_PHY(i,j,k)=0. _d 0
-          ELSEIF ( _hFacC(i,j,k+1,bi,bj).EQ.0. _d 0 ) THEN
-           SED_DET(i,j,k)=0. _d 0
-           SED_PHY(i,j,k)=0. _d 0
-          ELSE
-C- average to have flux at interface of layer        
-           SED_PHY(i,j) = (PTR_PHY(i,j,k-1)+PTR_PHY(i,j,k))/*drC(k)
-    &       * _hFacC(i,j,k,bi,bj)*(w_sink(i,j,k-1)+w_sink(i,j,k))/drC(k) 
-           SED_DET(i,j) = (PTR_DET(i,j,k-1)+PTR_DET(i,j,k))/*drC(k)
-    &       * _hFacC(i,j,k,bi,bj)*(w_sink(i,j,k-1)+w_sink(i,j,k))/drC(k) 
-          ENDIF
-         ENDIF
-        ENDDO
-       ENDDO
        
-       !From DARWIN code
-     
-389 	c -----------------------------------------------------------------
-390 	c evaluate vertical sink terms
-391 	c ************************************************************
-392 	c     biosink is +ve downwards
-393 	c     (upstream - downstream) * vertical velocity
-394 	c     bvert is a gain term
-395 	
-396 	!     factors to avoid sinking into surface layer, or out of bottom
-397 	      fSurf=float(1-surface)
-398 	      fBott=float(1-bottom)
-399 	!
-400 	      do io=1,iomax
-401 	!       plankton sinking
-402 	        do jp=1,npmax
-403 	            bvert(io,jp) = (fSurf*bioabove(io,jp)-fBott*biomass(io,jp))
-404 	     &                   *  biosink(jp) / dzlocal           ! + sinking in - sinking out
-405 	        enddo
-406 	!       organic matter sinking
-407 	        if (io.ne.iChlo) then
-408 	          pomsink(io) = (fSurf*orgabove(io,2)-fBott*orgmat(io,2))
-409 	     &                *  orgsink(2) / dzlocal
-410 	        endif
-411 	      enddo
-412 	c ************************************************************
-413 	c end evaluate vertical sink terms
-414 	c -----------------------------------------------------------------  
-       
-       
-       
-       
-       
-       
-       
-       
-       
-C--   If availabe, flux carbon export downward;
-C--   calculate flux to each layer from base of k
-       zbase=-rF(k+1)
-C--   Upper flux
-       DO j=jmin,jmax
-        DO i=imin,imax
-         flux_DET_u(i,j)  = SED_DET(i,j)
-         flux_u(i,j)  = SED_PHY(i,j)
-        ENDDO
-       ENDDO
-C     Instead of running the loop to ko=Nr and masking the last
-C     flux_l, let ko reach only Nr-1 and do a special loop for ko=Nr,
-C     in order to save a few expensive exp-function calls
-       DO ko=k+1,Nr-1
-        kop1   = MIN(Nr,ko+1)
-#ifndef NONLIN_FRSURF
-C     For the linear free surface, hFacC can be omitted, buying another
-C     performance increase of a factor of six on a vector computer.
-C     For now this is not implemented via run time flags, in order to 
-C     avoid making this code too complicated.
-        depth_l  = -rF(ko) + drF(ko)
-#endif /* NONLIN_FRSURF */
-        DO j=jmin,jmax
-         DO i=imin,imax
-          IF ( caexport(i,j) .NE. 0. _d 0 ) THEN
-C--   Lower flux (no flux to ocean bottom)
-#ifdef NONLIN_FRSURF
-           depth_l  = -rF(ko) + drF(ko) * _hFacC(i,j,ko,bi,bj)
-#endif /* NONLIN_FRSURF */ 
-           flux_l   = SED_PHY(i,j)
-           flux_DET_l   = SED_DET(i,j)
-C                   
-         SED_PHY(i,j,ko)=SED_PHY(i,j,ko) + (flux_u(i,j)-flux_l)
-      &        *recip_drF(ko) * _recip_hFacC(i,j,ko,bi,bj)*PTRACERS_dTLev(k)
-         SED_DET(i,j,ko)=SED_DET(i,j,ko) + (flux_DET_u(i,j)-flux_DET_l)
-     &        *recip_drF(ko) * _recip_hFacC(i,j,ko,bi,bj)*PTRACERS_dTLev(k)
- 
-C--   Store flux through upper layer for the next k-level
-           flux_u(i,j)  = flux_l
-           flux_DET_u(i,j)  = flux_DET_l
-C     endif carexport .ne. 0
-          ENDIF
-C     i,j-loops
-         ENDDO
-        ENDDO
-C     ko-loop
-       ENDDO
-C     now do ko = Nr
-       ko = Nr
-       flux_l = 0. _d 0
-       flux_DET_l = 0. _d 0
-       DO j=jmin,jmax
-        DO i=imin,imax
-         SED_PHY(i,j,ko)=SED_PHY(i,j,ko) + (flux_u(i,j)-flux_l)
-     &        *recip_drF(ko) * _recip_hFacC(i,j,ko,bi,bj)
-         SED_DET(i,j,ko)=SED_DET(i,j,ko) + (flux_DET_u(i,j)-flux_DET_l)
-     &        *recip_drF(ko) * _recip_hFacC(i,j,ko,bi,bj)
-        ENDDO
-       ENDDO
-C     k-loop
-      ENDDO
-
-
-
-
-
-
-
-
-
-
-
 
 #ifdef ALLOW_FE
 #ifdef MINFE
@@ -654,6 +577,12 @@ C save averages
      &                             BIOac(i,j,k)*deltaTClock
             PHYave(i,j,k,bi,bj)   =PHYave(i,j,k,bi,bj)+
      &                             PTR_PHY(i,j,k)*deltaTClock
+            ZOOave(i,j,k,bi,bj)   =ZOOave(i,j,k,bi,bj)+
+     &                             PTR_ZOO(i,j,k)*deltaTClock
+            DETave(i,j,k,bi,bj)   =DETave(i,j,k,bi,bj)+
+     &                             PTR_DET(i,j,k)*deltaTClock
+            DOPave(i,j,k,bi,bj)   =DOPave(i,j,k,bi,bj)+
+     &                             PTR_DOP(i,j,k)*deltaTClock
             CARave(i,j,k,bi,bj)   =CARave(i,j,k,bi,bj)+
      &                             CAR(i,j,k)*deltaTClock
             OmegaCave(i,j,k,bi,bj)=OmegaCave(i,j,k,bi,bj)+
