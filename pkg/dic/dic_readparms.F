@@ -27,6 +27,7 @@ C     !INPUT/OUTPUT PARAMETERS:
 C     === Routine arguments ===
 C     myThid    :: My Thread Id. number
       INTEGER myThid
+      _RL MM_phos
 CEOP
 
 #ifdef ALLOW_DIC
@@ -88,6 +89,10 @@ C                  read in rainRatioUniform and filled in 2d array rain_ratio
      & alpfe, fesedflux_pcm, FeIntSec, freefemax,
      & KScav, ligand_stab, ligand_tot,
      & alphaUniform, rainRatioUniform
+     & mu_HAM_ZOO, ZOO_min,PHY_MIN
+     & mu_PHY,mu_ZOO, r_PHY,K_remin_DET, sigma_assim,
+     & loss_HT_levels,r_ZOO, w_sink, w_sink_d, ingest_assim,
+     & omega_assim,omega_z, epsilon_z,sigma_z,K_Zoo, graz_ZOO_max
 #endif
 
       NAMELIST /DIC_FORCING/
@@ -132,16 +137,24 @@ C---+----1----+----2----+----3----+----4----+----5----+----6----+----7-|--+----|
        alphaUniform     = 2. _d -3/(360. _d 0 * 86400. _d 0)
        rainRatioUniform = 7. _d -2
        mu_PHY      = 0.008/86400 _d 0
+       mu_HAM_ZOO = 3./86400. _d 9
        mu_ZOO  = 0.006/86400 _d 0            
        r_PHY   =   0.03/86400 _d 0       
        r_ZOO   = 0.06/86400 _d 0
-       kappa_DET   = 0.025/86400 _d 0          
-       kappa_DOP   =    0.004/86400 _d 0    
-       sigma_assim =     0.6     
-       phi_loss_HT_levels =  0.04/86400/R_NP /MM_phos  
+       K_remin_DET   = 0.025/86400 _d 0          
+ !      kappa_DOP   =    0.004/86400 _d 0    
+       sigma_assim =     0.6 _d 0    
+       omega_assim =  0.8 _d 0
+       epsilon_z =0.95 _d 0
+       sigma_z = 0.6 _d 0
+       omega_z= 0.5 _d 0
+       loss_HT_levels =  0.04/86400/R_NP /MM_phos  
        K_Zoo       = 4. _d -5  !molP m^-3
        graz_ZOO_max= 1./86400. _d 0 !s^-1
        PHY_MIN     = 1. _d -8       !mol P m^-3
+       ZOO_min= 1. _d -8            !mol P m^-3
+       w_sink= 1./86400. _d 0 !s^-1
+       w_sink_d = 5./86400. _d 0 !s^-1
 ! the default values are for now taken from Tatiana Ilyina et al 2013
 ! Zooplankton mortality not, there seems to be a typo in the paper
 #endif
