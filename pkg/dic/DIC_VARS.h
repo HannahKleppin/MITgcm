@@ -233,20 +233,18 @@ C  mu_PHY                 :: phytoplankton mortality rate [1/d]
 C  mu_ZOO                 :: zooplankton mortality rate [1/d]
 C  r_PHY                  :: phytoplankton exudation  [1/d]
 C  r_ZOO                  :: zooplankton excretion [1/d]
-C  kappa_DET              :: remineralization time scale of Detritus [1/d]
+C  K_remin_DET            :: remineralization time scale of Detritus [1/d]
 C  kappa_DOP              :: remineralization time scale of DOP [1/d]
 C  sigma_assim            :: assimilation efficiency of Zooplankton []
-C  phi_loss_HT_levels     :: zooplankton loss to higher trophic levels [mg P/m^3/d]                  
-C  alphamax, alphamin     :: not used (legacy adjoint param)
-C  calpha                 :: not used (legacy adjoint param)
-C  crain_ratio            :: not used (legacy adjoint param)
-C  cInputFe               :: not used (legacy adjoint param)
-C  calpfe                 :: not used (legacy adjoint param)
-C  feload                 :: not used (legacy adjoint param)
-C  cfeload                :: not used (legacy adjoint param)
+C  phi_loss_HT_levels     :: zooplankton loss to higher trophic levels [mg P/m^3/d]   
+C  ingest_assim           :: assimilation efficiency HAMOCC formulation
+C  omega_z                :: 
+C  w_sink                 :: Phytoplankton sinking velocity
+C  w_sink_d               :: Detritus sinking velocity
 C  QSW_underice           :: is Qsw is masked by ice fraction?
       COMMON /BIOTIC_NEEDS/
-     &     BIOave, CARave, SURave, SUROave, pCO2ave, pHave,
+     &     BIOave, CARave, PHYave, ZOOave, DETave, DOPave,
+     &     SURave, SUROave, pCO2ave, pHave, EXP_flux_PHY, EXP_flux_DET
      &     fluxCO2ave, omegaCave, pfluxave, epfluxave, cfluxave,
      &     DIC_timeAve,
      &     par, alpha, rain_ratio, InputFe, omegaC, CHL,
@@ -258,14 +256,19 @@ C  QSW_underice           :: is Qsw is masked by ice fraction?
      &     alphaUniform, rainRatioUniform,
      &     alphamax, alphamin,
      &     calpha, crain_ratio, cInputFe, calpfe, feload, cfeload,
-     &     nlev, QSW_underice,
-     &     mu_PHY,mu_ZOO, r_PHY,kappa_DET, kappa_DOP, sigma_assim,
-     &      phi_loss_HT_levels,r_ZOO
+     &     nlev, QSW_underice, mu_HAM_ZOO, ZOO_min,PHY_MIN
+     &     mu_PHY,mu_ZOO, r_PHY,K_remin_DET, sigma_assim,
+     &     loss_HT_levels,r_ZOO, w_sink, w_sink_d, ingest_assim,
+     &     omega_assim,omega_z, epsilon_z,sigma_z,K_Zoo
 
       INTEGER nlev
 
       _RL BIOave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
       _RL CARave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
+      _RL PHYave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
+      _RL ZOOave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy) 
+      _RL DETave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
+      _RL DOPave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)   
       _RL SURave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL SUROave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL pCO2ave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
@@ -275,8 +278,9 @@ C  QSW_underice           :: is Qsw is masked by ice fraction?
       _RL pfluxave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
       _RL epfluxave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
       _RL cfluxave(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
+      _RL EXP_flux_PHY(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy) 
+      _RL EXP_flux_DET(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)      
       _RL DIC_timeAve(nSx,nSy)
-
       _RL par(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL alpha(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL rain_ratio(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
@@ -284,13 +288,24 @@ C  QSW_underice           :: is Qsw is masked by ice fraction?
       _RL omegaC(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr,nSx,nSy)
       _RL CHL(1-OLx:sNx+OLx,1-OLy:sNy+OLy,nSx,nSy)
       _RL mu_PHY
-      _RL  mu_ZOO                
+      _RL  mu_ZOO 
+      _RL mu_HAM_ZOO
       _RL  r_PHY                  
       _RL  r_ZOO
-      _RL  kappa_DET             
-      _RL  kappa_DOP           
-      _RL  sigma_assim           
-      _RL  phi_loss_HT_levels        
+      _RL graz_ZOO_max
+      _RL ZOO_min
+      _RL PHY_MIN
+      _RL K_Zoo
+      _RL  K_remin_DET                      
+      _RL  sigma_assim    
+      _RL omega_assim
+      _RL  ingest_assim 
+      _RL sigma_z
+      _RL epsilon_z
+      _RL  loss_HT_levels
+      _RL omega_z
+      _RL w_sink
+      _RL w_sink_d
       _RL Kpo4
       _RL DOPfraction
       _RL zcrit
