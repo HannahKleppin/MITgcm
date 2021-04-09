@@ -422,7 +422,7 @@ C add all tendencies for PO4, DOP, ALK, DIC
            GPO4(i,j,k)=-BIOac(i,j,k)*PTR_PHY(i,j,k) + RDOP(i,j,k)+
      &                  RMIN_DET(i,j,k)
            GPO4_HAMOCC(i,j,k)=-BIOac(i,j,k)*PTR_PHY(i,j,k) + RDOP(i,j,k)+
-     &                  RMIN_DET(i,j,k)+(GRAZ_ZOO_HAMOCC(i,j,k)*sigma_assim
+     &                  RMIN_DET(i,j,k)+(GRAZ_ZOO_HAMOCC(i,j,k)*omega_assim
      &                  -ASSIM_ZOO_HAMOCC(i,j,k))+MORT_ZOO_HAMOCC(i,j,k)*epsilon_z
 
 !Dissolved organic P
@@ -444,7 +444,7 @@ C add all tendencies for PO4, DOP, ALK, DIC
      &                   - EXP_flux_DET(i,j,k)
            !HAMOCC DETRITUS
            GDET_HAMOCC(i,j,k)=MORT_PHY(i,j,k)+MORT_ZOO_HAMOCC(i,j,k)*(1. _d 0 -epsilon_z)
-     &                        +(GRAZ_ZOO_HAMOCC(i,j,k)-ASSIM_ZOO_HAMOCC(i,j,k)/omega_assim)
+     &                        +(GRAZ_ZOO_HAMOCC(i,j,k)-ASSIM_ZOO_HAMOCC(i,j,k)/sigma_assim)
      &                        -RMIN_DET(i,j,k)-EXP_flux_DET(i,j,k)
                              
 !#           GDET_HAMOCC(i,j,k)=MORT_PHY(i,j,k)+MORT_ZOO(i,j,k)+GRAZ_ZOO_HAMOCC(i,j,k)
